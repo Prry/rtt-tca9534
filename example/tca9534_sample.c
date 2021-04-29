@@ -57,7 +57,6 @@ static void tca9534_sample_entry(void *parameter)
         rt_kprintf("tca9534 P0 status,[0x%02x]\r\n", read);
         value = !value;
         rt_thread_delay(RT_TICK_PER_SECOND/2);
-       
     }
 }
 
@@ -82,6 +81,6 @@ INIT_APP_EXPORT(tca9534_sample);
 
 static int rt_hw_tca9534_port(void)
 {
-    return rt_hw_tca9534_init("tca9534", "i2c1", 0x20);
+    return rt_tca9534_init("tca9534", "i2c1", 0x20);
 }
 INIT_DEVICE_EXPORT(rt_hw_tca9534_port);

@@ -19,10 +19,6 @@
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
 
-/* tca9534 hardware info */
-#define TCA9534_ADDR			0x20 		/* i2c slave address */
-#define TCA9534_DIEID			0x7500		/* tca9534 device id */
-
 /* tca9534 register */
 #define TCA9534_REG_INPORT      0x00
 #define TCA9534_REG_OUTPORT     0x01
@@ -34,11 +30,10 @@
 #define TCA9534_MODE_OUT        0x00    /* output mode */
 #define TCA9534_PI_NOR          0x00    /* normal polarity */
 #define TCA9534_PI_NOT          0x01    /* inversion  polarity */
+#define TCA9534_PIN_LOW         0x00    /* pin low */
+#define TCA9534_PIN_HIGH        0x01    /* pin high */
 
-/* tca9534 for RT-Thread */
-#define	TCA9534_I2C_BUS			"i2c1"		/* i2c linked */
-#define TCA9534_DEVICE_NAME		"tca9534"	/* register device name */
-
+/* tca9534 device */
 typedef struct tca9534_dev
 {
     struct rt_i2c_bus_device *i2c_bus;
@@ -47,7 +42,7 @@ typedef struct tca9534_dev
 
 static rt_err_t tca9534_read_reg(rt_device_t pdev, rt_uint8_t reg, rt_uint8_t *pdata)
 {
-    struct rt_i2c_msg msg[2];
+    struct rt_i2c_msg msg[2] = {0};
     tca9534_dev_t *ptca_dev = RT_NULL;
     
 	RT_ASSERT(pdev != RT_NULL);
@@ -75,7 +70,7 @@ static rt_err_t tca9534_read_reg(rt_device_t pdev, rt_uint8_t reg, rt_uint8_t *p
  
 static rt_err_t tca9534_write_reg(rt_device_t pdev, rt_uint8_t reg, rt_uint8_t data)
 {
-    struct rt_i2c_msg msg[2];
+    struct rt_i2c_msg msg[2] = {0};
 	struct tca9534_dev *ptca_dev = RT_NULL;
     
 	RT_ASSERT(pdev != RT_NULL);
@@ -118,14 +113,15 @@ rt_size_t rt_tca9534_write(rt_device_t dev, rt_off_t pos, void const *buffer, rt
 
     if (PIN_LOW == *(rt_uint8_t*)buffer)
     {
-        temp &= ~(PIN_HIGH << pos);
+        temp &= ~(TCA9534_PIN_HIGH << pos);
         tca9534_write_reg(dev, TCA9534_REG_OUTPORT, temp);
     }
     else
     {
-        temp |= PIN_HIGH << pos;
+        temp |= TCA9534_PIN_HIGH << pos;
         tca9534_write_reg(dev, TCA9534_REG_OUTPORT, temp);
     }
+    
     return size;
 }
 
@@ -136,6 +132,7 @@ rt_size_t rt_tca9534_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t
     tca9534_read_reg(dev, TCA9534_REG_INPORT, &temp);
     
     *(rt_uint8_t*)buffer = (temp>>pos)&0x01;
+    
     return size;
 }
 
@@ -185,7 +182,7 @@ static rt_err_t rt_tca9534_ctrl(rt_device_t dev, int cmd, void *args)
     return RT_EOK;
 }
 
-rt_err_t rt_hw_tca9534_init(const char *dev_name, const char *i2c_name, rt_uint8_t i2c_addr)
+rt_err_t rt_tca9534_init(const char *dev_name, const char *i2c_name, rt_uint8_t i2c_addr)
 {
   	rt_err_t ret = RT_EOK;
 	tca9534_dev_t *ptca_dev = RT_NULL;
@@ -241,5 +238,20 @@ __exit:
     
     return RT_ERROR;
 }
+
+void rt_tca9534_deinit(const char *dev_name)
+{
+    rt_device_t pdev = RT_NULL;
+    
+    pdev = rt_device_find(dev_name);
+    RT_ASSERT(pdev);
+    
+    if (RT_NULL != pdev->user_data)
+    {
+        rt_free(pdev->user_data);
+    }
+    rt_free(pdev);
+}
+
 
 #endif /* PKG_USING_TCA9534 */
