@@ -182,6 +182,18 @@ static rt_err_t rt_tca9534_ctrl(rt_device_t dev, int cmd, void *args)
     return RT_EOK;
 }
 
+#ifdef RT_USING_DEVICE_OPS
+const static struct rt_device_ops tca9534_dev_ops = 
+{
+    .init = RT_NULL,
+    .open = rt_tca9534_open,
+    .close = RT_NULL,
+    .read = rt_tca9534_read,
+    .write = rt_tca9534_write,
+    .control = rt_tca9534_ctrl
+};
+#endif
+
 rt_err_t rt_tca9534_init(const char *dev_name, const char *i2c_name, rt_uint8_t i2c_addr)
 {
   	rt_err_t ret = RT_EOK;
@@ -214,12 +226,16 @@ rt_err_t rt_tca9534_init(const char *dev_name, const char *i2c_name, rt_uint8_t 
     
     /* register device */
     prt_dev->type   = RT_Device_Class_Miscellaneous;
+#ifdef RT_USING_DEVICE_OPS
+    prt_dev->ops = &tca9534_dev_ops;
+#else
     prt_dev->init   = RT_NULL;
     prt_dev->open   = rt_tca9534_open;
     prt_dev->close  = RT_NULL;
     prt_dev->read   = rt_tca9534_read;
     prt_dev->write  = rt_tca9534_write;
     prt_dev->control= rt_tca9534_ctrl;
+#endif
     prt_dev->user_data 	= (void*)ptca_dev;	/* tca9534 device */;		
     rt_device_register(prt_dev, dev_name, RT_DEVICE_FLAG_RDWR);
 
